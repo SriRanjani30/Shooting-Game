@@ -1,141 +1,98 @@
 import pygame
-import random
-
+import sys
 # Initialize Pygame
 pygame.init()
-
-# Screen dimensions
+# Set up the screen
 screen_width = 800
 screen_height = 600
-
-# Create the screen
 screen = pygame.display.set_mode((screen_width, screen_height))
-
-# Title and Icon
 pygame.display.set_caption("Shooting Game")
-
-# Player
-player_img = pygame.image.load('player.png')  # Replace with your image path
-player_x = 370
-player_y = 480
-player_x_change = 0
-
-# Enemy
-enemy_img = pygame.image.load('enemy.png')  # Replace with your image path
-enemy_x = random.randint(0, screen_width - 64)
-enemy_y = random.randint(50, 150)
-enemy_x_change = 0.3
-enemy_y_change = 40
-
-# Bullet
-bullet_img = pygame.image.load('bullet.png')  # Replace with your image path
-bullet_x = 0
-bullet_y = 480
-bullet_x_change = 0
-bullet_y_change = 1
-bullet_state = "ready"  # "ready" - You can't see the bullet on the screen, "fire" - The bullet is currently moving
-
-# Score
-score_value = 0
-font = pygame.font.Font('freesansbold.ttf', 32)
-text_x = 10
-text_y = 10
-
-# Game Over
-over_font = pygame.font.Font('freesansbold.ttf', 64)
-
-def show_score(x, y):
-    score = font.render("Score : " + str(score_value), True, (255, 255, 255))
-    screen.blit(score, (x, y))
-
-def game_over_text():
-    over_text = over_font.render("GAME OVER", True, (255, 255, 255))
-    screen.blit(over_text, (200, 250))
-
-def player(x, y):
-    screen.blit(player_img, (x, y))
-
-def enemy(x, y):
-    screen.blit(enemy_img, (x, y))
-
-def fire_bullet(x, y):
-    global bullet_state
-    bullet_state = "fire"
-    screen.blit(bullet_img, (x + 16, y + 10))
-
-def is_collision(enemy_x, enemy_y, bullet_x, bullet_y):
-    distance = ((enemy_x - bullet_x) ** 2 + (enemy_y - bullet_y) ** 2) ** 0.5
-    return distance < 27
-
-# Game Loop
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+# Player settings
+player_size = 50
+player_speed = 5
+player_x = screen_width // 2 - player_size // 2
+player_y = screen_height - 2 * player_size
+# Bullet settings
+bullet_size = 10
+bullet_speed = 10
+bullet_color = (255, 0, 0)
+bullets = []
+# Enemy settings
+enemy_size = 50
+enemy_speed = 3
+enemy_color = (0, 255, 0)
+enemies = []
+# Game loop
 running = True
+clock = pygame.time.Clock()
 while running:
-
-    # RGB = Red, Green, Blue
-    screen.fill((0, 0, 0))
-
+    screen.fill(BLACK)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
-        # Key events
+        # Player controls
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                player_x_change = -0.5
-            if event.key == pygame.K_RIGHT:
-                player_x_change = 0.5
-            if event.key == pygame.K_SPACE:
-                if bullet_state == "ready":
-                    bullet_x = player_x
-                    fire_bullet(bullet_x, bullet_y)
+                player_x -= player_speed
+            elif event.key == pygame.K_RIGHT:
+                player_x += player_speed
+            elif event.key == pygame.K_SPACE:
+                # Shoot a bullet
+                bullet_x = player_x + player_size // 2 - bullet_size // 2
+                bullet_y = player_y
+                bullets.append((bullet_x, bullet_y))
+    # Update bullets
+    for i, bullet in enumerate(bullets):
+        bullet_x, bullet_y = bullet
+        bullet_y -= bullet_speed
+        bullets[i] = (bullet_x, bullet_y)
+        # Remove bullets that are off-screen
+        if bullet_y < 0:
+            bullets.pop(i)
+    # Generate enemies
+    if len(enemies) < 5:
+        enemy_x = pygame.time.get_ticks() % (screen_width - enemy_size)
+        enemy_y = -enemy_size
+        enemies.append((enemy_x, enemy_y))
+    # Update enemies
+    for i, enemy in enumerate(enemies):
+        enemy_x, enemy_y = enemy
+        enemy_y += enemy_speed
+        enemies[i] = (enemy_x, enemy_y)
 
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                player_x_change = 0
+ # Remove enemies that are off-screen
+        if enemy_y > screen_height:
+            enemies.pop(i)
 
-    # Player movement
-    player_x += player_x_change
-    if player_x <= 0:
-        player_x = 0
-    elif player_x >= screen_width - 64:
-        player_x = screen_width - 64
+    # Draw player
+    pygame.draw.rect(screen, WHITE, (player_x, player_y, player_size, player_size))
 
-    # Enemy movement
-    enemy_x += enemy_x_change
-    if enemy_x <= 0:
-        enemy_x_change = 0.3
-        enemy_y += enemy_y_change
-    elif enemy_x >= screen_width - 64:
-        enemy_x_change = -0.3
-        enemy_y += enemy_y_change
+    # Draw bullets
+    for bullet in bullets:
+        pygame.draw.rect(screen, bullet_color, (bullet[0], bullet[1], bullet_size, bullet_size))
 
-    # Bullet movement
-    if bullet_y <= 0:
-        bullet_y = 480
-        bullet_state = "ready"
+    # Draw enemies
+    for enemy in enemies:
+        pygame.draw.rect(screen, enemy_color, (enemy[0], enemy[1], enemy_size, enemy_size))
 
-    if bullet_state == "fire":
-        fire_bullet(bullet_x, bullet_y)
-        bullet_y -= bullet_y_change
+    # Collision detection
+    for bullet in bullets:
+        bullet_x, bullet_y = bullet
+        for enemy in enemies:
+            enemy_x, enemy_y = enemy
+            if (enemy_x < bullet_x < enemy_x + enemy_size) and (enemy_y < bullet_y < enemy_y + enemy_size):
+                bullets.remove(bullet)
+                enemies.remove(enemy)
 
-    # Collision
-    collision = is_collision(enemy_x, enemy_y, bullet_x, bullet_y)
-    if collision:
-        bullet_y = 480
-        bullet_state = "ready"
-        score_value += 1
-        enemy_x = random.randint(0, screen_width - 64)
-        enemy_y = random.randint(50, 150)
+    # Update the display
+    pygame.display.flip()
 
-    player(player_x, player_y)
-    enemy(enemy_x, enemy_y)
-    show_score(text_x, text_y)
+    # Limit frames per second
+    clock.tick(60)
 
-    # Check for game over
-    if enemy_y > 440:
-        for j in range(enemy_y, screen_height):
-            enemy_y += 10
-        game_over_text()
-        break
-
-    pygame.display.update()
+# Quit Pygame
+pygame.quit()
+sys.exit()
