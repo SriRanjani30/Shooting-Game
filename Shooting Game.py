@@ -24,7 +24,10 @@ player_x_change = 0
 enemy_img = pygame.image.load('Images/UFO.png')  # Replace with your image path
 enemy_img = pygame.transform.scale(enemy_img, (64, 64))  # Scale to desired size
 
-num_of_enemies = 6
+initial_num_of_enemies = 1  # Start with only 1 enemy
+num_of_enemies = initial_num_of_enemies
+initial_enemy_speed = 0.05  # Slower initial speed
+enemy_speed = initial_enemy_speed
 enemies = []
 enemy_x = []
 enemy_y = []
@@ -34,7 +37,7 @@ for i in range(num_of_enemies):
     enemies.append(enemy_img)
     enemy_x.append(random.randint(0, screen_width - 64))
     enemy_y.append(random.randint(-300, -64))
-    enemy_y_change.append(0.3)  # Set the speed of the enemy
+    enemy_y_change.append(enemy_speed)  # Set the speed of the enemy
 
 # Bullet properties
 bullet_width = 5
@@ -76,8 +79,12 @@ def is_collision(enemy_x, enemy_y, bullet_x, bullet_y):
     distance = ((enemy_x - bullet_x) ** 2 + (enemy_y - bullet_y) ** 2) ** 0.5
     return distance < 27
 
+# Timer for difficulty increase
+difficulty_timer = pygame.time.get_ticks()
+
 # Game Loop
 running = True
+game_over = False
 while running:
 
     screen.fill((0, 0, 0))
@@ -87,52 +94,63 @@ while running:
             running = False
 
         # Key events
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                player_x_change = -0.5
-            if event.key == pygame.K_RIGHT:
-                player_x_change = 0.5
-            if event.key == pygame.K_SPACE:
-                if bullet_state == "ready":
-                    bullet_x = player_x
-                    fire_bullet(bullet_x, bullet_y)
+        if not game_over:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    player_x_change = -0.5
+                if event.key == pygame.K_RIGHT:
+                    player_x_change = 0.5
+                if event.key == pygame.K_SPACE:
+                    if bullet_state == "ready":
+                        bullet_x = player_x
+                        fire_bullet(bullet_x, bullet_y)
 
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                player_x_change = 0
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+                    player_x_change = 0
 
     # Player movement
-    player_x += player_x_change
-    if player_x <= 0:
-        player_x = 0
-    elif player_x >= screen_width - 64:
-        player_x = screen_width - 64
+    if not game_over:
+        player_x += player_x_change
+        if player_x <= 0:
+            player_x = 0
+        elif player_x >= screen_width - 64:
+            player_x = screen_width - 64
+
+    # Increase difficulty over time
+    if pygame.time.get_ticks() - difficulty_timer > 5000 and not game_over:  # Every 5 seconds
+        difficulty_timer = pygame.time.get_ticks()
+        num_of_enemies += 1
+        enemy_speed += 0.02  # Increase speed incrementally
+        enemies.append(enemy_img)
+        enemy_x.append(random.randint(0, screen_width - 64))
+        enemy_y.append(random.randint(-300, -64))
+        enemy_y_change.append(enemy_speed)
 
     # Enemy movement
     for i in range(num_of_enemies):
-        enemy_y[i] += enemy_y_change[i]
+        if not game_over:
+            enemy_y[i] += enemy_y_change[i]
 
-        # Collision
-        collision = is_collision(enemy_x[i], enemy_y[i], bullet_x, bullet_y)
-        if collision:
-            bullet_y = 480
-            bullet_state = "ready"
-            enemy_x[i] = random.randint(0, screen_width - 64)
-            enemy_y[i] = random.randint(-300, -64)
+            # Collision
+            collision = is_collision(enemy_x[i], enemy_y[i], bullet_x, bullet_y)
+            if collision:
+                bullet_y = 480
+                bullet_state = "ready"
+                enemy_x[i] = random.randint(0, screen_width - 64)
+                enemy_y[i] = random.randint(-300, -64)
 
-        # Reset enemy position if it moves off the bottom
-        if enemy_y[i] > screen_height:
-            life_points -= 1
-            enemy_x[i] = random.randint(0, screen_width - 64)
-            enemy_y[i] = random.randint(-300, -64)
+            # Reset enemy position if it moves off the bottom
+            if enemy_y[i] > screen_height:
+                life_points -= 1
+                enemy_x[i] = random.randint(0, screen_width - 64)
+                enemy_y[i] = random.randint(-300, -64)
 
-        enemy(enemy_x[i], enemy_y[i], i)
+            enemy(enemy_x[i], enemy_y[i], i)
 
     # Check for game over
     if life_points <= 0:
-        for j in range(num_of_enemies):
-            enemy_y[j] = 2000  # Move all enemies off screen
-        game_over_text()
+        game_over = True
         running = False
 
     # Bullet movement
@@ -147,6 +165,14 @@ while running:
     player(player_x, player_y)
     show_life_points(10, 10)
 
+    if game_over:
+        game_over_text()
+
     pygame.display.update()
 
-pygame.quit()
+# Game loop ended, wait for user to quit
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
