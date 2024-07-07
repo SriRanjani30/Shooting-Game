@@ -76,3 +76,37 @@ while running:
         enemy_x, enemy_y = enemy
         enemy_y += enemy_speed
         enemies[i] = (enemy_x, enemy_y)
+
+ # Remove enemies that are off-screen
+        if enemy_y > screen_height:
+            enemies.pop(i)
+
+    # Draw player
+    pygame.draw.rect(screen, WHITE, (player_x, player_y, player_size, player_size))
+
+    # Draw bullets
+    for bullet in bullets:
+        pygame.draw.rect(screen, bullet_color, (bullet[0], bullet[1], bullet_size, bullet_size))
+
+    # Draw enemies
+    for enemy in enemies:
+        pygame.draw.rect(screen, enemy_color, (enemy[0], enemy[1], enemy_size, enemy_size))
+
+    # Collision detection
+    for bullet in bullets:
+        bullet_x, bullet_y = bullet
+        for enemy in enemies:
+            enemy_x, enemy_y = enemy
+            if (enemy_x < bullet_x < enemy_x + enemy_size) and (enemy_y < bullet_y < enemy_y + enemy_size):
+                bullets.remove(bullet)
+                enemies.remove(enemy)
+
+    # Update the display
+    pygame.display.flip()
+
+    # Limit frames per second
+    clock.tick(60)
+
+# Quit Pygame
+pygame.quit()
+sys.exit()
