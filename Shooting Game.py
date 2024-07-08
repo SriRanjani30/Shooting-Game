@@ -8,8 +8,8 @@ pygame.init()
 screen_width = 800
 screen_height = 600
 
-# Create the screen
-screen = pygame.display.set_mode((screen_width, screen_height))
+# Create the screen with resizable option
+screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
 
 # Title and Icon
 pygame.display.set_caption("Shooting Game")
@@ -47,6 +47,10 @@ life_points = 5
 # Score
 score_value = 0
 
+# Load background image
+background_img = pygame.image.load('Images/Background.jpg')  # Replace with your image path
+background_img = pygame.transform.scale(background_img, (screen_width, screen_height))
+
 def show_life_points(x, y):
     life_points_text = font.render("Life Points: " + str(life_points), True, (255, 255, 255))
     screen.blit(life_points_text, (x, y))
@@ -57,9 +61,50 @@ def show_score(x, y):
 
 def game_over_text():
     over_text = over_font.render("GAME OVER", True, (255, 255, 255))
-    screen.blit(over_text, (200, 250))
-    restart_text = font.render("Press R to Restart", True, (255, 255, 255))
-    screen.blit(restart_text, (250, 350))
+    screen.blit(over_text, (screen_width // 2 - 200, screen_height // 2 - 100))
+    draw_buttons()
+
+def draw_buttons():
+    # Button properties
+    button_width = 150
+    button_height = 50
+    button_border_radius = 15
+    button_text_color = (255, 255, 255)
+    
+    # Restart button
+    restart_button_rect = pygame.Rect(screen_width // 2 - button_width - 25, screen_height // 2, button_width, button_height)
+    restart_button_color = (0, 200, 0)
+    restart_button_hover_color = (0, 255, 0)
+    restart_button_outline_color = (0, 150, 0)
+    
+    # Exit button
+    exit_button_rect = pygame.Rect(screen_width // 2 + 25, screen_height // 2, button_width, button_height)
+    exit_button_color = (200, 0, 0)
+    exit_button_hover_color = (255, 0, 0)
+    exit_button_outline_color = (150, 0, 0)
+    
+    # Mouse position
+    mouse_pos = pygame.mouse.get_pos()
+    
+    # Restart button
+    if restart_button_rect.collidepoint(mouse_pos):
+        pygame.draw.rect(screen, restart_button_hover_color, restart_button_rect, border_radius=button_border_radius)
+    else:
+        pygame.draw.rect(screen, restart_button_color, restart_button_rect, border_radius=button_border_radius)
+    pygame.draw.rect(screen, restart_button_outline_color, restart_button_rect, 3, border_radius=button_border_radius)
+    restart_text = font.render("Restart", True, button_text_color)
+    screen.blit(restart_text, (restart_button_rect.x + 25, restart_button_rect.y + 10))
+    
+    # Exit button
+    if exit_button_rect.collidepoint(mouse_pos):
+        pygame.draw.rect(screen, exit_button_hover_color, exit_button_rect, border_radius=button_border_radius)
+    else:
+        pygame.draw.rect(screen, exit_button_color, exit_button_rect, border_radius=button_border_radius)
+    pygame.draw.rect(screen, exit_button_outline_color, exit_button_rect, 3, border_radius=button_border_radius)
+    exit_text = font.render("Exit", True, button_text_color)
+    screen.blit(exit_text, (exit_button_rect.x + 50, exit_button_rect.y + 10))
+
+    return restart_button_rect, exit_button_rect
 
 def player(x, y):
     screen.blit(player_img, (x, y))
@@ -120,9 +165,19 @@ running = True
 while running:
     screen.fill((0, 0, 0))
 
+    # Draw the background image
+    screen.blit(background_img, (0, 0))
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # Handle window resizing
+        if event.type == pygame.VIDEORESIZE:
+            screen_width = event.w
+            screen_height = event.h
+            screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+            background_img = pygame.transform.scale(background_img, (screen_width, screen_height))
 
         # Key events
         if not game_over:
@@ -139,8 +194,13 @@ while running:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     player_x_change = 0
         else:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                reset_game()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                restart_button_rect, exit_button_rect = draw_buttons()
+                if restart_button_rect.collidepoint(mouse_pos):
+                    reset_game()
+                elif exit_button_rect.collidepoint(mouse_pos):
+                    running = False
 
     # Player movement
     if not game_over:
@@ -204,3 +264,4 @@ while running:
     pygame.display.update()
 
 pygame.quit()
+
