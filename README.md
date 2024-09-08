@@ -7,3 +7,8 @@ Note: I have used AI to learn and Implement some Elements in this Game.
 
 ![Screenshot (3458)](https://github.com/user-attachments/assets/01deff56-2426-4587-b2b2-12efd627caa0)
 
+Requirements:
+1. latest python package
+2. Command prompt
+3. Basic knowledge of handling commands
+
