@@ -4,3 +4,6 @@
 Note: I have used AI to learn and Implement some Elements in this Game.
 
 [Latest Release](https://github.com/SriRanjani30/Shooting-Game/releases/latest)
+
+![Screenshot (3458)](https://github.com/user-attachments/assets/01deff56-2426-4587-b2b2-12efd627caa0)
+
